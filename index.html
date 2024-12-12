@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Login System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], 
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .project-list {
+            margin-top: 20px;
+        }
+        .project-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #4CAF50;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-box h3 {
+            margin: 0;
+            color: #333;
+            font-size: 14px;
+        }
+        .stat-box p {
+            margin: 10px 0 0 0;
+            font-size: 20px;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen hidden">
+        <div class="loader"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div class="header">
+        <h1>Scratch Login System</h1>
+    </div>
+
+    <div class="container">
+        <!-- Login Form -->
+        <div id="loginSection">
+            <h2>Login to Scratch</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Enter your Scratch username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter your Scratch password" required>
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="loginError" class="error hidden"></div>
+        </div>
+
+        <!-- User Info Section -->
+        <div id="userSection" class="hidden">
+            <h2>Welcome, <span id="userUsername"></span>!</h2>
+            
+            <!-- Stats Grid -->
+            <div class="stats-container">
+                <div class="stat-box">
+                    <h3>Followers</h3>
+                    <p id="userFollowers">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Following</h3>
+                    <p id="userFollowing">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Views</h3>
+                    <p id="userViews">0</p>
+                </div>
+            </div>
+
+            <h3>Your Projects</h3>
+            <div id="projectsList" class="project-list"></div>
+
+            <div class="form-group">
+                <h3>Post Project Comment</h3>
+                <label for="projectId">Project ID:</label>
+                <input type="text" id="projectId" placeholder="Enter project ID">
+                <label for="comment">Comment:</label>
+                <textarea id="comment" placeholder="Enter your comment" rows="4"></textarea>
+                <button onclick="postComment()">Post Comment</button>
+                <div id="commentError" class="error hidden"></div>
+                <div id="commentSuccess" class="success hidden"></div>
+            </div>
+
+            <button onclick="logout()" style="margin-top: 20px;">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                document.getElementById('loginError').textContent = 'Please enter both username and password';
+                document.getElementById('loginError').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            document.querySelector('#loadingScreen p').textContent = 'Logging in to Scratch...';
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('loadingScreen').classList.add('hidden');
+                
+                if (data.success) {
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('userSection').classList.remove('hidden');
+                    
+                    document.getElementById('userUsername').textContent = data.username;
+                    document.getElementById('userFollowers').textContent = data.stats.followers || 0;
+                    document.getElementById('userFollowing').textContent = data.stats.following || 0;
+                    document.getElementById('userViews').textContent = data.stats.views || 0;
+                    
+                    loadProjects();
+                } else {
+                    document.getElementById('loginError').textContent = data.error;
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            } catch (error) {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginError').textContent = 'Connection error';
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        async function loadProjects() {
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            document.querySelector('#loadingScreen p').textContent = 'Loading projects...';
+            
+            try {
+                const response = await fetch(`${API_URL}/projects`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const projectsList = document.getElementById('projectsList');
+                    projectsList.innerHTML = '';
+                    
+                    if (data.projects.length === 0) {
+                        projectsList.innerHTML = '<p>No projects found</p>';
+                    } else {
+                        data.projects.forEach(project => {
+                            const projectDiv = document.createElement('div');
+                            projectDiv.className = 'project-item';
+                            projectDiv.innerHTML = `
+                                <strong>${project.title}</strong>
+                                <p>Project ID: ${project.id}</p>
+                            `;
+                            projectsList.appendChild(projectDiv);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            } finally {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }
+        }
+
+        async function postComment() {
+            const projectId = document.getElementById('projectId').value;
+            const comment = document.getElementById('comment').value;
+
+            if (!projectId || !comment) {
+                document.getElementById('commentError').textContent = 'Please enter both project ID and comment';
+                document.getElementById('commentError').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            document.querySelector('#loadingScreen p').textContent = 'Posting comment...';
+            
+            try {
+                const response = await fetch(`${API_URL}/project/${projectId}/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ comment }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('commentSuccess').textContent = 'Comment posted successfully!';
+                    document.getElementById('commentSuccess').classList.remove('hidden');
+                    document.getElementById('commentError').classList.add('hidden');
+                    document.getElementById('comment').value = '';
+                    document.getElementById('projectId').value = '';
+                } else {
+                    document.getElementById('commentError').textContent = data.error;
+                    document.getElementById('commentError').classList.remove('hidden');
+                    document.getElementById('commentSuccess').classList.add('hidden');
+                }
+            } catch (error) {
+                document.getElementById('commentError').textContent = 'Connection error';
+                document.getElementById('commentError').classList.remove('hidden');
+                document.getElementById('commentSuccess').classList.add('hidden');
+            } finally {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }
+        }
+
+        async function logout() {
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            document.querySelector('#loadingScreen p').textContent = 'Logging out...';
+            
+            try {
+                await fetch(`${API_URL}/logout`, { method: 'POST' });
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('userSection').classList.add('hidden');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('loginError').classList.add('hidden');
+            } catch (error) {
+                console.error('Error logging out:', error);
+            } finally {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }
+        }
+
+        // Add enter key support for login
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
