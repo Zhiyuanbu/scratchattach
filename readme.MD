@@ -1,8 +1,7 @@
-WARNING, THIS FILE DOES NOT GET UPDATED REALLY OFTEN. BACK THEN, THERE IS ONLY SCRATCH 3.0 IF THIS IS OUTDATED, PLEASE REQUEST A UPDATE. 
+_ScratchDB is down, so stats aren't accurate_
 
-
-Please use command: pip install scratchattach
-Please use command: pip install flask flask-cors
+Please use command: ```pip install scratchattach```
+Please use command: ```pip install flask flask-cors```
 
 
 If you don't have python, download it at https://www.python.org/downloads/
@@ -12,7 +11,7 @@ First run backend.py
 
 Then run index.html to access
 
-WARNINGS:
+#WARNINGS:
 
 Do NOT close backend.py when opened index.html, may cause crashes otherwise!
 
